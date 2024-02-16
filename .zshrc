@@ -130,3 +130,6 @@ esac
 export MUSIC_APP="Music"
 export XDG_CONFIG_HOME=~/.config
 
+eval "$(zoxide init --cmd cd zsh)"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
