@@ -2,7 +2,8 @@
 ^/LICENSE.*
 ^/COPYING
 
-.DS_Store
+\.DS_Store
 
 \.git
 \.gitignore
+\.gitmodules
