@@ -133,3 +133,6 @@ export XDG_CONFIG_HOME=~/.config
 eval "$(zoxide init --cmd cd zsh)"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+export PATH="/usr/local/go/bin:$PATH"
+alias ll="ls -la"
