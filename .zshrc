@@ -136,3 +136,6 @@ eval "$(zoxide init --cmd cd zsh)"
 
 export PATH="/usr/local/go/bin:$PATH"
 alias ll="ls -la"
+
+export QMK_HOME='~/qmk_firmware'
+export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
