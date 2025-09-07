@@ -109,8 +109,6 @@ export PKG_CONFIG_PATH="/opt/homebrew/opt/jpeg/lib/pkgconfig"
 export LDFLAGS="-L/opt/homebrew/opt/jpeg/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/jpeg/include"
 
-alias nvim='nvim --listen /tmp/nvim-server.pipe'
-
 
 # bun completions
 [ -s "/Users/lukaspetko/.bun/_bun" ] && source "/Users/lukaspetko/.bun/_bun"
