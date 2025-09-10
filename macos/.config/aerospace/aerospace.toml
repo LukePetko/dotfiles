@@ -9,7 +9,7 @@
 # so it won't be run twice on AeroSpace restart
 after-startup-command = [
     'exec-and-forget sketchybar', 
-    'exec-and-forget borders active_color=0xffe1e3e4 inactive_color=0xff494d64 width=5.0'
+    'exec-and-forget borders active_color=0x80c77dff inactive_color=0xffe1e3e4 width=5.0'
 ]
 
 
@@ -76,8 +76,8 @@ run = 'layout floating'
     inner.vertical =   10
     outer.left =       10
     outer.bottom =     10
-    outer.top =        45
-    outer.right =      10
+    outer.top =        10
+    outer.right =      75
 
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
