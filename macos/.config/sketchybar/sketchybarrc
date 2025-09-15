@@ -63,7 +63,7 @@ source "$ITEM_DIR/front_app.sh"
 # source "$ITEM_DIR/spotify.sh"
 
 # Right
-source "$ITEM_DIR/github.sh"
+# source "$ITEM_DIR/github.sh"
 source "$ITEM_DIR/calendar.sh"
 source "$ITEM_DIR/cpu.sh"
 
