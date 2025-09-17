@@ -130,3 +130,6 @@ cask "anaconda"
 cask "font-hack-nerd-font"
 # Wine wrapper built with SwiftUI
 cask "whisky"
+cask "ghostty"
+cask "zen"
+cask "font-jetbrains-mono-nerd-font"
