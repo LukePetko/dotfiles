@@ -105,6 +105,24 @@ run_stow() {
   ok "Stow complete."
 }
 
+install_tpm() {
+  local tpm_dir="${HOME}/.tmux/plugins/tpm"
+  if [[ -d "$tpm_dir/.git" ]]; then
+    info "Updating TPM…"
+    git -C "$tpm_dir" pull --ff-only
+  else
+    info "Cloning TPM…"
+    git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
+  fi
+
+  if [[ "$MODE" != "check" ]]; then
+    info "Installing tmux plugins via TPM…"
+    "$tpm_dir/bin/install_plugins" || warn "TPM plugin install failed."
+  else
+    warn "Would run TPM install (skipped in --check)."
+  fi
+}
+
 main() {
   require_arm_macos
   info "Repo: ${REPO_ROOT}"
@@ -113,6 +131,7 @@ main() {
   brew_prepare_and_bundle
   backup_conflicts
   run_stow
+  install_tpm
   ok "All done. In Ghostty, pick: JetBrainsMonoNL Nerd Font Mono."
 }
 
