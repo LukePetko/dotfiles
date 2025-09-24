@@ -121,6 +121,7 @@ brew "felixkratz/formulae/sketchybar"
 # Waypoint
 brew "hashicorp/tap/waypoint"
 brew "tursodatabase/tap/turso"
+brew "qmk"
 # Command-line interface for 1Password
 cask "1password-cli"
 # AeroSpace is an i3-like tiling window manager for macOS
