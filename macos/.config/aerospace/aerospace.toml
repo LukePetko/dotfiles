@@ -160,7 +160,7 @@ run = 'layout floating'
 
     alt-ctrl-enter = 'fullscreen'
 
-    alt-t = 'exec-and-forget open -a /Applications/Ghostty.app'
+    alt-t = 'exec-and-forget open -n -a /Applications/Ghostty.app'
 
     alt-shift-left = 'join-with left'
     alt-shift-down = 'join-with down'
