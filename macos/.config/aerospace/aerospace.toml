@@ -137,18 +137,29 @@ run = 'layout floating'
     alt-s = 'workspace 2'
     alt-d = 'workspace 3'
 
-    alt-q = 'workspace 4'
-    alt-w = 'workspace 5'
-    alt-e = 'workspace 6'
+    alt-q = 'workspace 6'
+    alt-w = 'workspace 7'
+    alt-e = 'workspace 8'
+
+    alt-u = 'workspace 4'
+    alt-i = 'workspace 5'
+    alt-o = 'workspace 9'
+    alt-p = 'workspace 10'
+
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
     alt-shift-a = 'move-node-to-workspace 1'
     alt-shift-s = 'move-node-to-workspace 2'
     alt-shift-d = 'move-node-to-workspace 3'
 
-    alt-shift-q = 'move-node-to-workspace 4'
-    alt-shift-w = 'move-node-to-workspace 5'
-    alt-shift-e = 'move-node-to-workspace 6'
+    alt-shift-q = 'move-node-to-workspace 6'
+    alt-shift-w = 'move-node-to-workspace 7'
+    alt-shift-e = 'move-node-to-workspace 8'
+
+    alt-shift-u = 'move-node-to-workspace 4'
+    alt-shift-i = 'move-node-to-workspace 5'
+    alt-shift-o = 'move-node-to-workspace 9'
+    alt-shift-p = 'move-node-to-workspace 10'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#workspace-back-and-forth
     alt-tab = 'workspace-back-and-forth'
@@ -174,9 +185,13 @@ run = 'layout floating'
     1 = 'main'
     2 = 'main'
     3 = 'main'
-    4 = 'secondary'
-    5 = 'secondary'
+    4 = 'main'
+    5 = 'main'
     6 = 'secondary'
+    7 = 'secondary'
+    8 = 'secondary'
+    9 = 'secondary'
+    10 = 'secondary'
 
 # 'service' binding mode declaration.
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes

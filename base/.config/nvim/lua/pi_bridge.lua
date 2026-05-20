@@ -11,6 +11,10 @@ local connected = false
 local read_buffer = ""
 local pending = {}
 local next_id = 1
+local reconnect_timer = nil
+local reconnect_delay = 500
+local sessions = {}
+local selected_target_session_id = nil
 
 local function notify(msg, level)
   vim.schedule(function()
@@ -26,9 +30,38 @@ local function json_decode(str)
   return vim.json and vim.json.decode(str) or vim.fn.json_decode(str)
 end
 
+local tmux_pane = os.getenv("TMUX_PANE")
+local tmux_client_tty = os.getenv("TTY")
+
+local function tmux_display(format)
+  local cmd = string.format("tmux display-message -p %q", format)
+  local handle = io.popen(cmd)
+  if not handle then return nil end
+  local out = handle:read("*a")
+  local ok = handle:close()
+  if not ok then return nil end
+  return vim.trim(out or "")
+end
+
+local function current_tmux_pane()
+  if tmux_pane and tmux_pane ~= "" then return tmux_pane end
+  tmux_pane = tmux_display("#{pane_id}")
+  return tmux_pane
+end
+
+local function current_tmux_client_tty()
+  if tmux_client_tty and tmux_client_tty ~= "" then return tmux_client_tty end
+  tmux_client_tty = tmux_display("#{client_tty}")
+  return tmux_client_tty
+end
+
 local function send(tbl)
+  if selected_target_session_id and not tbl.targetSessionId then
+    tbl.targetSessionId = selected_target_session_id
+  end
   if not socket or not connected then
-    notify("not connected; run :PiBridgeConnect", vim.log.levels.WARN)
+    notify("not connected; retrying pi bridge", vim.log.levels.WARN)
+    M.connect()
     return false
   end
   socket:write(json_encode(tbl) .. "\n")
@@ -104,8 +137,18 @@ local function context_for_kind(kind)
   end
 end
 
+local function session_label(session)
+  local cwd = session.cwd or "?"
+  local name = vim.fn.fnamemodify(cwd, ":t")
+  local short = vim.fn.fnamemodify(cwd, ":~")
+  local pane = session.tmuxPane and (" · " .. session.tmuxPane) or ""
+  local selected = session.sessionId == selected_target_session_id and "● " or "  "
+  return string.format("%s%s · %s%s", selected, name, short, pane)
+end
+
 local function handle_message(msg)
   if msg.type == "hello" then
+    sessions = msg.sessions or sessions
     notify("connected to pi nvim bridge")
   elseif msg.type == "show_message" then
     notify(msg.message or "")
@@ -123,22 +166,48 @@ local function handle_message(msg)
       ctx = context_for_kind(msg.kind)
       send({ replyTo = msg.id, ok = true, context = ctx })
     end)
+  elseif msg.type == "sessions" then
+    sessions = msg.sessions or {}
+  elseif msg.type == "selected_session" then
+    selected_target_session_id = msg.targetSessionId
+    sessions = msg.sessions or sessions
+    notify("selected pi session")
+  elseif msg.type == "focused_pi" then
+    notify("focused pi pane")
   elseif msg.type == "error" then
     notify(msg.error or "pi bridge error", vim.log.levels.ERROR)
   end
 end
 
+local function schedule_reconnect()
+  if reconnect_timer then return end
+  reconnect_timer = uv.new_timer()
+  reconnect_timer:start(reconnect_delay, 0, vim.schedule_wrap(function()
+    reconnect_timer:close()
+    reconnect_timer = nil
+    if not connected then M.connect() end
+  end))
+  reconnect_delay = math.min(reconnect_delay * 2, 2000)
+end
+
 function M.connect()
   if connected then return end
+  if socket then pcall(function() socket:close() end) end
   socket = uv.new_tcp()
   socket:connect(M.config.host, M.config.port, function(err)
     if err then
-      notify("connect failed: " .. tostring(err), vim.log.levels.ERROR)
       connected = false
+      schedule_reconnect()
       return
     end
     connected = true
-    send({ type = "hello", from = "nvim" })
+    reconnect_delay = 500
+    send({
+      type = "hello",
+      role = "nvim",
+      tmuxPane = current_tmux_pane(),
+      tmuxClientTty = current_tmux_client_tty(),
+    })
     socket:read_start(function(read_err, chunk)
       if read_err then
         notify("read error: " .. tostring(read_err), vim.log.levels.ERROR)
@@ -146,6 +215,7 @@ function M.connect()
       end
       if not chunk then
         connected = false
+        schedule_reconnect()
         return
       end
       read_buffer = read_buffer .. chunk
@@ -181,6 +251,98 @@ function M.send_diagnostics()
   send(vim.tbl_extend("force", { type = "context" }, get_diagnostics_context()))
 end
 
+function M.list_sessions()
+  if not connected then M.connect() end
+  vim.defer_fn(function()
+    send({ type = "list_sessions" })
+  end, connected and 0 or 300)
+  vim.defer_fn(function()
+    if #sessions == 0 then
+      notify("no pi sessions reported yet", vim.log.levels.WARN)
+      return
+    end
+    local lines = {}
+    for index, session in ipairs(sessions) do
+      table.insert(lines, string.format("%d. %s", index, session_label(session)))
+    end
+    notify(table.concat(lines, "\n"))
+  end, connected and 150 or 600)
+end
+
+local function choose_session_with_telescope()
+  local ok_pickers, pickers = pcall(require, "telescope.pickers")
+  local ok_finders, finders = pcall(require, "telescope.finders")
+  local ok_conf, conf = pcall(require, "telescope.config")
+  local ok_actions, actions = pcall(require, "telescope.actions")
+  local ok_state, action_state = pcall(require, "telescope.actions.state")
+  if not (ok_pickers and ok_finders and ok_conf and ok_actions and ok_state) then
+    return false
+  end
+
+  pickers.new({}, {
+    prompt_title = "Pi sessions",
+    finder = finders.new_table({
+      results = sessions,
+      entry_maker = function(session)
+        return {
+          value = session,
+          display = session_label(session),
+          ordinal = table.concat({ session.cwd or "", session.tmuxPane or "", session.sessionId or "" }, " "),
+        }
+      end,
+    }),
+    sorter = conf.values.generic_sorter({}),
+    attach_mappings = function(prompt_bufnr)
+      actions.select_default:replace(function()
+        local entry = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+        if not entry then return end
+        local choice = entry.value
+        selected_target_session_id = choice.sessionId
+        send({ type = "select_session", targetSessionId = choice.sessionId })
+        notify("selected " .. session_label(choice))
+      end)
+      return true
+    end,
+  }):find()
+  return true
+end
+
+function M.select_session()
+  if not connected then M.connect() end
+  vim.defer_fn(function()
+    send({ type = "list_sessions" })
+  end, connected and 0 or 300)
+  vim.defer_fn(function()
+    if #sessions == 0 then
+      notify("no pi sessions reported yet", vim.log.levels.WARN)
+      return
+    end
+    if choose_session_with_telescope() then return end
+    vim.ui.select(sessions, {
+      prompt = "Select Pi session",
+      format_item = session_label,
+    }, function(choice)
+      if not choice then return end
+      selected_target_session_id = choice.sessionId
+      send({ type = "select_session", targetSessionId = choice.sessionId })
+      notify("selected " .. session_label(choice))
+    end)
+  end, connected and 150 or 600)
+end
+
+function M.clear_selection()
+  selected_target_session_id = nil
+  notify("pi bridge target reset to auto")
+end
+
+function M.focus_pi()
+  if not connected then M.connect() end
+  vim.defer_fn(function()
+    send({ type = "focus_pi" })
+  end, connected and 0 or 300)
+end
+
 function M.ask(opts)
   opts = opts or {}
   local args = opts.args or ""
@@ -195,11 +357,19 @@ end
 
 function M.setup(opts)
   M.config = vim.tbl_extend("force", M.config, opts or {})
+  if M.config.auto_connect ~= false then
+    vim.defer_fn(function() M.connect() end, 100)
+  end
   vim.api.nvim_create_user_command("PiBridgeConnect", function() M.connect() end, {})
   vim.api.nvim_create_user_command("PiBridgeDisconnect", function() M.disconnect() end, {})
   vim.api.nvim_create_user_command("PiSendSelection", function() M.send_selection() end, { range = true })
   vim.api.nvim_create_user_command("PiSendBuffer", function() M.send_buffer() end, {})
   vim.api.nvim_create_user_command("PiSendDiagnostics", function() M.send_diagnostics() end, {})
+  vim.api.nvim_create_user_command("PiSessions", function() M.list_sessions() end, {})
+  vim.api.nvim_create_user_command("PiSelect", function() M.select_session() end, {})
+  vim.api.nvim_create_user_command("PiAuto", function() M.clear_selection() end, {})
+  vim.api.nvim_create_user_command("PiFocus", function() M.focus_pi() end, {})
+  vim.keymap.set({ "n", "v", "i", "t" }, "<C-\\>", function() M.focus_pi() end, { desc = "Focus selected Pi pane" })
   vim.api.nvim_create_user_command("PiAsk", function(opts2) M.ask(opts2) end, { nargs = "*", range = true })
 end
 

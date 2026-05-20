@@ -3,7 +3,7 @@
 sketchybar --add event aerospace_workspace_change
 
 # SPACE_ICONS=$(aerospace list-workspaces --all)
-SPACE_ICONS=("1" "2" "3" "4" "5" "6")
+SPACE_ICONS=("1" "2" "3" "4" "5" "6" "7" "8" "9" "10")
 
 sid=0
 for i in "${SPACE_ICONS[@]}"; do
