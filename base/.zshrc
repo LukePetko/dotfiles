@@ -1,6 +1,11 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
+# Prefer Homebrew Python without changing other tools' PATH precedence.
+if [[ -x /opt/homebrew/opt/python3/bin/python3 ]]; then
+  export PATH="/opt/homebrew/opt/python3/bin:$PATH"
+fi
+
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
