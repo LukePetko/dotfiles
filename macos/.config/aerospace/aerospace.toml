@@ -8,14 +8,14 @@
 # sketchbar has a built-in detection of already running process,
 # so it won't be run twice on AeroSpace restart
 after-startup-command = [
-    'exec-and-forget sketchybar', 
-    'exec-and-forget borders active_color=0x80c77dff inactive_color=0xffe1e3e4 width=5.0'
+    'exec-and-forget /opt/homebrew/bin/sketchybar',
+    'exec-and-forget /opt/homebrew/bin/borders active_color=0x80c77dff inactive_color=0xffe1e3e4 width=5.0'
 ]
 
 
 # Notify Sketchybar about workspace change
 exec-on-workspace-change = ['/bin/bash', '-c',
-    'sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
+    '/opt/homebrew/bin/sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
 ]
 
 # Start AeroSpace at login
